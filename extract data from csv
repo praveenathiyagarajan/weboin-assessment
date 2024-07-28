@@ -1,0 +1,77 @@
+import pandas as pd
+from fpdf import FPDF
+
+class PDF(FPDF):
+    def header(self):
+        self.set_font('Arial', 'B', 12)
+        self.cell(0, 10, 'Invoice', 0, 1, 'C')
+    
+    def footer(self):
+        self.set_y(-15)
+        self.set_font('Arial', 'I', 8)
+        self.cell(0, 10, f'Page {self.page_no()}', 0, 0, 'C')
+    
+    def invoice_body(self, date, name, address, contact, GSTIN, items):
+        self.set_font('Arial', '', 12)
+        self.cell(0, 10, f'Date: {date}', 0, 1)
+        self.cell(0, 10, f'Name: {name}', 0, 1)
+        self.cell(0, 10, f'Address: {address}', 0, 1)
+        self.cell(0, 10, f'Contact: {contact}', 0, 1)
+        self.cell(0, 10, f'GSTIN: {GSTIN}', 0, 1)
+        
+        self.ln(10)
+        self.set_font('Arial', 'B', 12)
+        self.cell(40, 10, 'Description', 1)
+        self.cell(20, 10, 'QTY', 1)
+        self.cell(30, 10, 'Price', 1)
+        self.cell(30, 10, 'CGST(18%)', 1)
+        self.cell(30, 10, 'SGST(18%)', 1)
+        self.cell(30, 10, 'IGST(18%)', 1)
+        self.cell(40, 10, 'Total Amount', 1)
+        self.ln()
+        
+        self.set_font('Arial', '', 12)
+        for index, row in items.iterrows():
+            self.cell(40, 10, str(row['DESCRIPTION']), 1)
+            self.cell(20, 10, str(row['QTY']), 1)
+            self.cell(30, 10, str(row['PRICE']), 1)
+            self.cell(30, 10, str(row['CGST(18%)']), 1)
+            self.cell(30, 10, str(row['SGST18%']), 1)
+            self.cell(30, 10, str(row['IGST18%']), 1)
+            self.cell(40, 10, str(row['TOTAL AMOUNT']), 1)
+            self.ln()
+
+# Sample data
+data = {
+    'INVOICE_NO': [1, 1, 2, 2],
+    'DATE': ['2024-01-01', '2024-01-01', '2024-02-01', '2024-02-01'],
+    'NAME': ['John Doe', 'John Doe', 'Jane Smith', 'Jane Smith'],
+    'ADDRESS': ['123 Elm St', '123 Elm St', '456 Oak St', '456 Oak St'],
+    'CONTACT': ['555-1234', '555-1234', '555-5678', '555-5678'],
+    'GSTIN': ['123456789012345', '123456789012345', '987654321098765', '987654321098765'],
+    'DESCRIPTION': ['Item A', 'Item B', 'Item C', 'Item D'],
+    'QTY': [2, 1, 3, 1],
+    'PRICE': [100, 150, 200, 250],
+    'CGST(18%)': [18, 27, 36, 45],
+    'SGST18%': [18, 27, 36, 45],
+    'IGST18%': [0, 0, 0, 0],
+    'TOTAL AMOUNT': [236, 204, 636, 295]
+}
+
+df = pd.DataFrame(data)
+
+grouped = df.groupby('INVOICE_NO')
+
+for invoice_no, group in grouped:
+    date = group['DATE'].iloc[0]
+    name = group['NAME'].iloc[0]
+    address = group['ADDRESS'].iloc[0]
+    contact = group['CONTACT'].iloc[0]
+    GSTIN = group['GSTIN'].iloc[0]
+    items = group[['DESCRIPTION', 'QTY', 'PRICE', 'CGST(18%)', 'SGST18%', 'IGST18%', 'TOTAL AMOUNT']]
+    
+    pdf = PDF()
+    pdf.add_page()
+    pdf.invoice_body(date, name, address, contact, GSTIN, items)
+    pdf_file_path = f'/content/sample_data/Invoice_{invoice_no}.pdf'
+    pdf.output(pdf_file_path)
